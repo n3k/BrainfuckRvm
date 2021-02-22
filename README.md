@@ -10,3 +10,7 @@ A Brainfuck interpreter with a JIT
 - VM3 = 10s
 - JIT = 4s
 - JITOpt = 2s
+
+### Requires Keystone
+- https://www.keystone-engine.org/docs/
+- https://github.com/keystone-engine/keystone/blob/master/docs/COMPILE.md
