@@ -1,6 +1,3 @@
-
-#![feature(asm)]
-
 pub mod jitcache;
 use crate::jitcache::JitCache;
 
@@ -8,6 +5,7 @@ use std::{collections::HashMap, io, sync::{Arc}, time::Instant};
 use io::{Write, Read};
 extern crate regex;
 use regex::Regex;
+use std::arch::asm;
 
 extern crate keystone;
 use keystone::{Arch, Keystone, MODE_64, OPT_SYNTAX_INTEL, OptionType};
@@ -92,6 +90,7 @@ impl Emu {
 
         let start = Instant::now();
 
+        //match self.generate_jit(instructions) {
         match self.generate_jit_opt(instructions) {
             Ok(machine_code) => {
                 let jitted_addr = jit_cache.add_mapping(0, &machine_code);
@@ -340,7 +339,7 @@ impl Emu {
             asm += &format!(r#"
                ret;
             "#);
-          
+            
             let result = engine.asm(asm.to_string(), 0)
             .expect(&format!("could not assemble:\n{}", asm));            
 
@@ -356,8 +355,7 @@ impl Emu {
 
         /// used to keep track of [] loops
         //let mut loop_positions = Vec::<usize>::new();
-        let mut start_loop_positions = Vec::<usize>::new();
-        let mut end_loop_positions = Vec::<usize>::new();
+        let mut start_loop_positions = Vec::<usize>::new();        
 
         let mut idx: usize = 0;
 
@@ -433,7 +431,7 @@ impl Emu {
                             println!("Executed Op: , at pos {} - ptr: {}", idx, self.ptr);  
                         }
                     }
-                },
+               },
                 b'[' => {
                     // If the byte value at the data pointer is zero,
                     // jump to the instruction following the matching ] bracket.
@@ -455,7 +453,6 @@ impl Emu {
                     }
 
                     if scan_loop_end == false {
-                        end_loop_positions.pop();
                         start_loop_positions.push(idx);
                     } else {
                         nested_depth += 1;
@@ -471,8 +468,7 @@ impl Emu {
                         if nested_depth == 0 {
                             scan_loop_end = false;
                         }
-                    } else {       
-                        //end_loop_positions.push(idx);                 
+                    } else {                       
                         idx = start_loop_positions.pop().unwrap();                        
                         continue;
                     }
@@ -933,6 +929,7 @@ fn plot_mandelbrot() {
     let jit_cache = Arc::new(JitCache::new(1024 * 1024));
 
     let mut emu = Emu::new(30000).enable_jit(jit_cache);
+    //let mut emu = Emu::new(30000);
 
     match emu.run(bfcode) {
         Some(VmExit::PtrOob) => {
